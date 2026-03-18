@@ -1,3 +1,15 @@
+# Interactive Demos Builder (Next.js)
+
+Desktop-local and Vercel-ready application for composing interactive demos from HTML templates.
+
+## Architecture
+
+- **Next.js 15** with App Router
+- **Storage Abstraction Layer** supporting local filesystem and Vercel Blob
+- **React + TypeScript + Tailwind CSS**
+- **Zustand** for state management
+- **Zod** for schema validation
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
