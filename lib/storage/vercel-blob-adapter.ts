@@ -40,7 +40,7 @@ export class VercelBlobAdapter implements StorageAdapter {
 
   private async putBlob(path: string, content: string): Promise<void> {
     await put(path, content, {
-      access: 'public',
+      access: 'private',
       token: this.blobToken,
     });
   }

@@ -24,11 +24,15 @@ async function uploadTemplates() {
   let uploadCount = 0;
 
   for (const category of categories) {
+    // Skip hidden files and system files
+    if (category.startsWith('.')) continue;
+
     const categoryPath = join(templatesPath, category);
-    const stat = await readFile(categoryPath).catch(() => null);
     
-    // Skip if not a directory
-    if (!stat) continue;
+    // Check if it's a directory
+    const { stat } = await import('fs/promises');
+    const stats = await stat(categoryPath).catch(() => null);
+    if (!stats || !stats.isDirectory()) continue;
 
     console.log(`📂 Processing category: ${category}`);
     
@@ -40,10 +44,10 @@ async function uploadTemplates() {
       const filePath = join(categoryPath, file);
       const content = await readFile(filePath, 'utf-8');
       
-      // Upload to Blob
+      // Upload to Blob (use private access since store is private)
       const blobPath = `templates/${category}/${file}`;
       await put(blobPath, content, {
-        access: 'public',
+        access: 'private',
         token,
       });
 
@@ -71,7 +75,7 @@ async function uploadTemplates() {
   // Upload templates index
   console.log('\n📝 Creating templates index...');
   await put('templates-index.json', JSON.stringify({ templates }, null, 2), {
-    access: 'public',
+    access: 'private',
     token,
   });
 
