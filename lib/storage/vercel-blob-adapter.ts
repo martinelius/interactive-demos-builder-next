@@ -30,7 +30,18 @@ export class VercelBlobAdapter implements StorageAdapter {
       const { blobs } = await list({ prefix: path, token: this.blobToken });
       if (blobs.length === 0) return null;
       
-      const response = await fetch(blobs[0].url);
+      // For private blobs, we need to use the downloadUrl with token
+      const response = await fetch(blobs[0].downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${this.blobToken}`,
+        },
+      });
+      
+      if (!response.ok) {
+        console.error(`Failed to fetch blob ${path}: ${response.status} ${response.statusText}`);
+        return null;
+      }
+      
       return await response.text();
     } catch (error) {
       console.error(`Error reading blob ${path}:`, error);
@@ -613,7 +624,12 @@ export class VercelBlobAdapter implements StorageAdapter {
     const { blobs } = await list({ prefix: source, token: this.blobToken });
     for (const blob of blobs) {
       const relativePath = blob.pathname.substring(source.length);
-      const content = await fetch(blob.url).then(r => r.text());
+      const response = await fetch(blob.downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${this.blobToken}`,
+        },
+      });
+      const content = await response.text();
       await this.putBlob(`${destination}${relativePath}`, content);
     }
   }
