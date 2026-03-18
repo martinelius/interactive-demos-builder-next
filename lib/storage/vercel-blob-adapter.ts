@@ -50,6 +50,16 @@ export class VercelBlobAdapter implements StorageAdapter {
   }
 
   private async putBlob(path: string, content: string, addRandomSuffix: boolean = false): Promise<string> {
+    // First, try to delete existing blob with exact path
+    try {
+      const { blobs } = await list({ prefix: path, token: this.blobToken, limit: 1 });
+      if (blobs.length > 0 && blobs[0].pathname === path) {
+        await del(blobs[0].url, { token: this.blobToken });
+      }
+    } catch (error) {
+      // Ignore delete errors - file might not exist
+    }
+
     const result = await put(path, content, {
       access: 'private',
       token: this.blobToken,
@@ -113,8 +123,6 @@ export class VercelBlobAdapter implements StorageAdapter {
   }
 
   async writeSettings(settings: AppSettings): Promise<void> {
-    // Delete existing settings first to avoid "blob already exists" error
-    await this.deleteBlob('settings.json');
     await this.putBlob('settings.json', JSON.stringify(settings, null, 2));
   }
 
@@ -150,8 +158,6 @@ export class VercelBlobAdapter implements StorageAdapter {
       slides: [],
     };
 
-    // Delete existing project.json first to avoid "blob already exists" error
-    await this.deleteBlob(`projects/${projectId}/project.json`);
     await this.putBlob(`projects/${projectId}/project.json`, JSON.stringify(metadata, null, 2));
 
     const index = await this.readProjectsIndex() || { schemaVersion: 1, projects: [] };
