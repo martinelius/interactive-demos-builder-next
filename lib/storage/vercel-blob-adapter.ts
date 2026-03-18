@@ -49,11 +49,13 @@ export class VercelBlobAdapter implements StorageAdapter {
     }
   }
 
-  private async putBlob(path: string, content: string): Promise<void> {
-    await put(path, content, {
+  private async putBlob(path: string, content: string, addRandomSuffix: boolean = false): Promise<string> {
+    const result = await put(path, content, {
       access: 'private',
       token: this.blobToken,
+      addRandomSuffix,
     });
+    return result.url;
   }
 
   private async deleteBlob(path: string): Promise<void> {
@@ -111,6 +113,8 @@ export class VercelBlobAdapter implements StorageAdapter {
   }
 
   async writeSettings(settings: AppSettings): Promise<void> {
+    // Delete existing settings first to avoid "blob already exists" error
+    await this.deleteBlob('settings.json');
     await this.putBlob('settings.json', JSON.stringify(settings, null, 2));
   }
 
@@ -146,6 +150,8 @@ export class VercelBlobAdapter implements StorageAdapter {
       slides: [],
     };
 
+    // Delete existing project.json first to avoid "blob already exists" error
+    await this.deleteBlob(`projects/${projectId}/project.json`);
     await this.putBlob(`projects/${projectId}/project.json`, JSON.stringify(metadata, null, 2));
 
     const index = await this.readProjectsIndex() || { schemaVersion: 1, projects: [] };
