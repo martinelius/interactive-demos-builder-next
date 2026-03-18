@@ -55,9 +55,11 @@ export class VercelBlobAdapter implements StorageAdapter {
       const { blobs } = await list({ prefix: path, token: this.blobToken, limit: 1 });
       if (blobs.length > 0 && blobs[0].pathname === path) {
         await del(blobs[0].url, { token: this.blobToken });
+        // Wait a bit to ensure deletion is processed
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      // Ignore delete errors - file might not exist
+      console.error(`Error deleting blob ${path}:`, error);
     }
 
     const result = await put(path, content, {
@@ -158,13 +160,19 @@ export class VercelBlobAdapter implements StorageAdapter {
       slides: [],
     };
 
-    await this.putBlob(`projects/${projectId}/project.json`, JSON.stringify(metadata, null, 2));
+    try {
+      await this.putBlob(`projects/${projectId}/project.json`, JSON.stringify(metadata, null, 2));
 
-    const index = await this.readProjectsIndex() || { schemaVersion: 1, projects: [] };
-    index.projects.push(project);
-    await this.writeProjectsIndex(index);
+      const index = await this.readProjectsIndex() || { schemaVersion: 1, projects: [] };
+      index.projects.push(project);
+      await this.writeProjectsIndex(index);
 
-    return project;
+      console.log(`Project created successfully: ${projectId}`);
+      return project;
+    } catch (error) {
+      console.error(`Error creating project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   async listProjects(): Promise<ProjectSummary[]> {
